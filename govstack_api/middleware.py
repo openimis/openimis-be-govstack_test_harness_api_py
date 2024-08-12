@@ -1,4 +1,5 @@
 import os
+import logging 
 from functools import wraps
 from types import SimpleNamespace
 from unittest import mock
@@ -11,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from core.schema import Query as CoreQuery, Mutation as CoreMutation
 
+logger = logging.getLogger(__name__)
 
 def authenticate_decorator(view_func):
     @wraps(view_func)
@@ -101,9 +103,13 @@ class ContentTypeMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        # Check if the response is from a specific app
-        view_module = request.resolver_match.func.__module__
-
+        try:
+            # Check if the response is from a specific app
+            view_module = request.resolver_match.func.__module__
+        except Exception as e: 
+            logger.exception(F'Invalid resolve_match format for request {request}.')
+            return response
+            
         if "govstack_api" in view_module and response['Content-Type'] == 'application/json; charset=utf-8':
             response['Content-Type'] = 'application/json'
 
